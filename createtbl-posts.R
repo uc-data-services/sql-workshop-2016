@@ -24,6 +24,7 @@ actual_iter <- 0
 chunk_size <- 500
 total_posts <- 0
 total_questions <- 0
+last.rowid <- 0
 while (TRUE) {
   
   actual_iter <- actual_iter + 1
@@ -51,35 +52,62 @@ while (TRUE) {
   
   rows <- x %>% xml_find_one("body") %>% xml_find_all("row")
   
-  posttiypeids <- x %>%  xml_find_all("body") %>% xml_find_all("row") %>% xml_attr("posttypeid")
-  
-  rows <- rows[posttiypeids == "1"]
+  posttypeids <- x %>%  xml_find_all("body") %>% xml_find_all("row") %>% xml_attr("posttypeid")
+
+  # build and save the 'questions' table  
+  qrows <- rows[posttypeids == "1"]
   
   total_questions <- total_questions + length(rows)
   
-  df <- data_frame(id = rows %>% xml_attr("id"),
-                   creationdate = rows %>% xml_attr("creationdate"),
-                   score = rows %>% xml_attr("score"),
-                   viewcount = rows %>% xml_attr("viewcount"),
-                   title = rows %>% xml_attr("title"),
-                   tags = rows %>% xml_attr("tags"))
+  df <- data_frame(questionid = qrows %>% xml_attr("id"),
+                   creationdate = qrows %>% xml_attr("creationdate"),
+                   score = qrows %>% xml_attr("score"),
+                   viewcount = qrows %>% xml_attr("viewcount"),
+                   title = qrows %>% xml_attr("title"),
+                   ownerid = qrows %>% xml_attr("owneruserid"),
+                   tags = qrows %>% xml_attr("tags"))
 	df$id <- as.numeric(df$id)			   
 	df$creationdate <- format(df$creationdate, format="%Y-%m-%d %H:%M:%S" )
 	df$score <- as.numeric(df$score)
 	df$viewcount <- as.numeric(df$viewcount)
 	
-	
-  dbWriteTable(conn = con, name = "questions", as.data.frame(df),
+	dbWriteTable(conn = con, name = "questions", as.data.frame(df),
               row.names = FALSE, append = TRUE)
-  
+
+	# parse the tags out from the questions and save in the questions_tags table  
   df2 <- df %>% select(id, tags) %>% group_by(id) %>% do({
     data_frame(tag = str_split(.$tags, "<|>") %>% unlist() %>% setdiff(c("")))
   }) %>% ungroup()
   df2$id <- as.numeric(df2$id)
+  
+  # create a row id that to use as primary key
+  start <- last.rowid + 1
+  end <- last.rowid + nrow(df2)
+  df2$rowid <- c(start:end)
+  last.rowid <- end
+  
+  # rename the columns
+  names(df2) <- c("questionid", "tag", "rowid")
   dbWriteTable(conn = con, name = "questions_tags", as.data.frame(df2),
                row.names = FALSE, append = TRUE)
   
-}
+# build the 'answers' table
+  arows <- rows[posttypeids == "2"]
+  
+  df3 <- data_frame(answerid = arows %>% xml_attr("id"),
+                   questionid = arows %>% xml_attr("parentid"),
+                   creationdate = arows %>% xml_attr("creationdate"),
+                   score = qrows %>% xml_attr("score"),
+                   ownerid = qrows %>% xml_attr("owneruserid"))
+  df3$answerid <- as.numeric(df$answerid)			   
+  df3$creationdate <- format(df$creationdate, format="%Y-%m-%d %H:%M:%S" )
+  df3$score <- as.numeric(df$score)
+  df3$viewcount <- as.numeric(df$viewcount)
+  
+  dbWriteTable(conn = con, name = "questions", as.data.frame(df),
+               row.names = FALSE, append = TRUE)
+  
+  }
 
 dbDisconnect(con)
 
