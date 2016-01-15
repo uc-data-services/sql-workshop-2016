@@ -1,7 +1,4 @@
-# Read posts.xml and create the questions and questions_tags tables
-# for "security", the database host, user, and password are read from environment
-# variables
-
+# Read Postlinks.xml and create the postlinks table
 
 library("xml2")
 library("dplyr")
@@ -9,17 +6,7 @@ library("stringr")
 library("RPostgreSQL")
 
 rm(list = ls())
-dbhost <- Sys.getenv("PGSERVER")
-dbuser <- Sys.getenv("PGUSER")
-dbpasswd <- Sys.getenv("PGPASSWD")
-drv <- dbDriver("PostgreSQL")
-db <- dbConnect(drv, 
-                 dbname = "stackoverflow", 
-                 host = dbhost, 
-                 port = 5432, 
-                 user = dbuser, 
-                 password = dbpasswd)
-
+source("dbconn.R")
 file <- "original_data/stats/PostLinks.xml"
 dat <- file(description = file, open = "r")
 invisible(readLines(con = dat, n = 2))
@@ -54,30 +41,22 @@ while (TRUE) {
   
   rows <- x %>% xml_find_one("body") %>% xml_find_all("row")
   
-  df <- data_frame(id = rows %>% xml_attr("id"),
+  df <- data_frame(linkid = rows %>% xml_attr("id"),
                    creationdate = rows %>% xml_attr("creationdate"),
                    postid = rows %>% xml_attr("postid"),
                    relatedpostid = rows %>% xml_attr("relatedpostid"),
                    linktypeid = rows %>% xml_attr("linktypeid"))
 	
-  df$id <- as.numeric(df$id)			   
+  df$linkid <- as.numeric(df$linkid)			   
   df$postid <- as.numeric(df$postid)	
   df$relatedpostid <- as.numeric(df$relatedpostid)
   df$linktypeid <- as.numeric(df$linktypeid)
 
-  dbWriteTable(conn = db, name = "postlinks", as.data.frame(df),
+  dbWriteTable(conn = con, name = "postlinks", as.data.frame(df),
               row.names = FALSE, append = TRUE)
   
 }
-
-dbDisconnect(db)
-db <- dbConnect(drv, 
-                dbname = "stackoverflow", 
-                host = dbhost, 
-                port = 5432, 
-                user = dbuser, 
-                password = dbpasswd)
-
-dbGetQuery(db, "select count(1) from postlinks")
-dbDisconnect(db)
+close(dat)
+dbGetQuery(con, "ALTER TABLE postlinks ADD PRIMARY KEY(linkid)")
+dbDisconnect(con)
 

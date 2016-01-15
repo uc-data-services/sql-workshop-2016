@@ -15,6 +15,7 @@ con <- dbConnect(drv,
                  port = 5432, 
                  user = dbuser, 
                  password = dbpasswd)
+source("dbconn.R")
 file <- "original_data/stats/Posts.xml"
 dat <- file(description = file, open = "r")
 invisible(readLines(con = dat, n = 2))
@@ -54,11 +55,13 @@ while (TRUE) {
   df <- data_frame(questionid = rows %>% xml_attr("id"),
                    answerid = rows %>% xml_attr("acceptedanswerid"))
                    
-  df$questionid <- as.numeric(df$id)			   
+  df$questionid <- as.numeric(df$questionid)			   
   df$answerid <- as.numeric(df$answerid)
 
-  dbWriteTable(conn = con, name = "acceptedanswers", as.data.frame(df),
+  dbWriteTable(conn = con, name = "accepted_answers", as.data.frame(df),
                row.names = FALSE, append = TRUE)
 }
 
+close(dat)
+dbGetQuery(con, "ALTER TABLE accepted_answers ADD PRIMARY KEY (questionid)")
 dbDisconnect(con)

@@ -1,7 +1,4 @@
-# Read posts.xml and create the questions and questions_tags tables
-# for "security", the database host, user, and password are read from environment
-# variables
-
+# Read Users.xml and create the users table
 
 library("xml2")
 library("dplyr")
@@ -54,7 +51,7 @@ while (TRUE) {
   
   rows <- x %>% xml_find_one("body") %>% xml_find_all("row")
   
-  df <- data_frame(id = rows %>% xml_attr("id"),
+  df <- data_frame(userid = rows %>% xml_attr("id"),
                    creationdate = rows %>% xml_attr("creationdate"),
                    lastaccessdate = rows %>% xml_attr("lastaccessdate"),
                    location = rows %>% xml_attr("location"),
@@ -65,10 +62,11 @@ while (TRUE) {
                    age = rows %>% xml_attr("age"),
                    accountid = rows %>% xml_attr("accountid"))
 	
-  df$id <- as.numeric(df$id)			   
+  df$userid <- as.numeric(df$userid)			   
   df$reputation <- as.numeric(df$reputation)	
   df$upvotes <- as.numeric(df$upvotes)
   df$downvotes <- as.numeric(df$downvotes)
+  df$age <- as.numeric(df$accountid)
   df$accountid <- as.numeric(df$accountid)
   
   
@@ -76,12 +74,9 @@ while (TRUE) {
   dbWriteTable(conn = con, name = "users", as.data.frame(df),
               row.names = FALSE, append = TRUE)
   
-  
 }
 
+close(dat)
+dbGetQuery(con, "ALTER TABLE users ADD PRIMARY KEY (userid)")
 dbDisconnect(con)
-db <- dbConnect(drv, dbname = "stackoverflow", host = "doemo.lib.berkeley.edu", 
-                port = 5432, user = "hdekker", password = "gammd5.13")
-dbGetQuery(db, "select count(1) from users")
-dbDisconnect(db)
 

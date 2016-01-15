@@ -66,19 +66,21 @@ while (TRUE) {
                    title = qrows %>% xml_attr("title"),
                    ownerid = qrows %>% xml_attr("owneruserid"),
                    tags = qrows %>% xml_attr("tags"))
-	df$id <- as.numeric(df$id)			   
+	df$questionid <- as.numeric(df$questionid)			   
 	df$creationdate <- format(df$creationdate, format="%Y-%m-%d %H:%M:%S" )
 	df$score <- as.numeric(df$score)
 	df$viewcount <- as.numeric(df$viewcount)
+	df$ownerid <- as.numeric(df$ownerid)
 	
-	dbWriteTable(conn = con, name = "questions", as.data.frame(df),
+	
+	dbWriteTable(conn = con, name = "questions", as.data.frame(df[,c(1:6)]),
               row.names = FALSE, append = TRUE)
 
 	# parse the tags out from the questions and save in the questions_tags table  
-  df2 <- df %>% select(id, tags) %>% group_by(id) %>% do({
+  df2 <- df %>% select(questionid, tags) %>% group_by(questionid) %>% do({
     data_frame(tag = str_split(.$tags, "<|>") %>% unlist() %>% setdiff(c("")))
   }) %>% ungroup()
-  df2$id <- as.numeric(df2$id)
+  df2$questionid <- as.numeric(df2$questionid)
   
   # create a row id that to use as primary key
   start <- last.rowid + 1
@@ -88,6 +90,8 @@ while (TRUE) {
   
   # rename the columns
   names(df2) <- c("questionid", "tag", "rowid")
+  
+  # write the data frame to the db
   dbWriteTable(conn = con, name = "questions_tags", as.data.frame(df2),
                row.names = FALSE, append = TRUE)
   
@@ -97,24 +101,49 @@ while (TRUE) {
   df3 <- data_frame(answerid = arows %>% xml_attr("id"),
                    questionid = arows %>% xml_attr("parentid"),
                    creationdate = arows %>% xml_attr("creationdate"),
-                   score = qrows %>% xml_attr("score"),
-                   ownerid = qrows %>% xml_attr("owneruserid"))
-  df3$answerid <- as.numeric(df$answerid)			   
-  df3$creationdate <- format(df$creationdate, format="%Y-%m-%d %H:%M:%S" )
-  df3$score <- as.numeric(df$score)
-  df3$viewcount <- as.numeric(df$viewcount)
+                   score = arows %>% xml_attr("score"),
+                   ownerid = arows %>% xml_attr("owneruserid"))
   
-  dbWriteTable(conn = con, name = "questions", as.data.frame(df),
+  df3$answerid <- as.numeric(df3$answerid)			   
+  df3$creationdate <- format(df3$creationdate, format="%Y-%m-%d %H:%M:%S" )
+  df3$score <- as.numeric(df3$score)
+  df3$questionid <- as.numeric(df3$questionid)
+  df3$ownerid <- as.numeric(df3$ownerid)
+  
+  dbWriteTable(conn = con, name = "answers", as.data.frame(df3),
                row.names = FALSE, append = TRUE)
-  
-  }
+}
+close(dat)
+# add primary keys
+dbGetQuery(con, "ALTER TABLE questions ADD PRIMARY KEY (questionid)")
+dbGetQuery(con, "ALTER TABLE answers ADD PRIMARY KEY (answerid)")
+
+# create the tags table by pulling the unique tag values from question_tags
+df4 <- dbGetQuery(con, "select distinct tag 
+                  from questions_tags
+                  order by tag")
+
+# add an id field
+df4$tagid <- c(1:nrow(df4))
+
+# add to the db
+dbWriteTable(conn = con, name = "tags", as.data.frame(df4),
+             row.names = FALSE, append = TRUE)
+
+# add a column to hold a tagid
+dbGetQuery(con, "ALTER TABLE questions_tags ADD COLUMN tagid integer")
+
+# populate the new column with tagids (this is apparently the postgres way to do it)
+dbGetQuery(con,"UPDATE questions_tags SET tagid = t.tagid
+                FROM tags as t
+                WHERE questions_tags.tag = t.tag")
+
+# get rid of unnecessary column
+dbGetQuery(con, "ALTER TABLE questions_tags DROP COLUMN tag")
+
+# add some more tags and indices
+dbGetQuery(con, "ALTER TABLE tags ADD PRIMARY KEY (tagid)")
+dbGetQuery(con, "CREATE INDEX ON questions (ownerid)")
+
 
 dbDisconnect(con)
-
-
-### test 
-db <- dbConnect(drv, dbname = "stackoverflow", host = "doemo.lib.berkeley.edu", 
-port = 5432, user = "hdekker", password = "gammd5.13")
-dbGetQuery(db, "select count(1) from questions")
-dbGetQuery(db, "select count(1) from questions_tags")
-dbDisconnect(db)
