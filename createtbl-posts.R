@@ -1,4 +1,4 @@
-# Read posts.xml and create the questions and questions_tags tables
+# Read posts.xml and create the questions, questions_tags, answers, and tags tables
 
 library("xml2")
 library("dplyr")
@@ -114,36 +114,59 @@ while (TRUE) {
                row.names = FALSE, append = TRUE)
 }
 close(dat)
-# add primary keys
-dbGetQuery(con, "ALTER TABLE questions ADD PRIMARY KEY (questionid)")
-dbGetQuery(con, "ALTER TABLE answers ADD PRIMARY KEY (answerid)")
 
-# create the tags table by pulling the unique tag values from question_tags
+### Modify some default data types and add primary key and indices
+
+ # 'questions_tags'
+dbGetQuery(con, "ALTER TABLE questions_tags ALTER COLUMN questionid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE questions_tags ADD PRIMARY KEY (rowid)")
+dbGetQuery(con, "CREATE INDEX ON questions_tags (questionid)")
+dbGetQuery(con, "CREATE INDEX ON questions_tags (tagid)")
+
+# 'questions'
+dbGetQuery(con, "ALTER TABLE questions ALTER COLUMN questionid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE questions ALTER COLUMN score TYPE integer;")
+dbGetQuery(con, "ALTER TABLE questions ALTER COLUMN viewcount TYPE integer;")
+dbGetQuery(con, "ALTER TABLE questions ADD PRIMARY KEY (questionid)")
+dbGetQuery(con, "CREATE INDEX ON questions (ownerid)")
+
+# 'answers'
+dbGetQuery(con, "ALTER TABLE answers ALTER COLUMN answerid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE answers ALTER COLUMN questionid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE answers ALTER COLUMN score TYPE integer;")
+dbGetQuery(con, "ALTER TABLE answers ALTER COLUMN ownerid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE answers ADD PRIMARY KEY (answerid)")
+dbGetQuery(con, "CREATE INDEX ON answers (ownerid)")
+dbGetQuery(con, "CREATE INDEX ON answers (questionid)")
+
+### Create the 'tags' table
+ # grab the tags via a query
 df4 <- dbGetQuery(con, "select distinct tag 
                   from questions_tags
                   order by tag")
 
-# add an id field
+ # add an id field
 df4$tagid <- c(1:nrow(df4))
 
-# add to the db
+ # add to the db
 dbWriteTable(conn = con, name = "tags", as.data.frame(df4),
              row.names = FALSE, append = TRUE)
 
-# add a column to hold a tagid
+ # add a column to hold a tagid
 dbGetQuery(con, "ALTER TABLE questions_tags ADD COLUMN tagid integer")
 
-# populate the new column with tagids (this is apparently the postgres way to do it)
+ # populate the new column with tagids (this is apparently the postgres way to do it)
 dbGetQuery(con,"UPDATE questions_tags SET tagid = t.tagid
-                FROM tags as t
-                WHERE questions_tags.tag = t.tag")
+           FROM tags as t
+           WHERE questions_tags.tag = t.tag")
 
-# get rid of unnecessary column
-dbGetQuery(con, "ALTER TABLE questions_tags DROP COLUMN tag")
-
-# add some more tags and indices
+ # add a primary key
 dbGetQuery(con, "ALTER TABLE tags ADD PRIMARY KEY (tagid)")
-dbGetQuery(con, "CREATE INDEX ON questions (ownerid)")
 
+ # index the tags
+dbGetQuery(con, "CREATE INDEX ON tags (lower(tag))")
+
+# remove the now unnecessary tag column in questions_tags
+dbGetQuery(con, "ALTER TABLE questions_tags DROP COLUMN tag")
 
 dbDisconnect(con)
