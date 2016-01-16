@@ -140,7 +140,7 @@ Listing the tags associated with a given post involves joining three tables. The
 
 Outer joins take the same form but the result sets contain rows where there was no match. It's helpful to draw a diagram to understand the LEFT/RIGHT condition.
 
-In this example we'll get a list of all users who've never posted a question, order it by displayname, and show the only the first 25 results.
+In this example we'll get a list of all users who've never posted a question, order it by displayname, and show only the first 25 results.
 
 ```SQL
 SELECT displayname 
@@ -178,7 +178,7 @@ Note that in the having clause the function was used, rather than the label 'n'.
 **Challenge**  
 What is the displayname of the user with the most "accepted answers" and how many does he/she have?
 
-Subqueries
+### Subqueries
 ```SQL
 SELECT answerid, ownerid, score
 FROM answers
@@ -188,7 +188,7 @@ WHERE score > (
 )
 ```
 
-Another common form of subquery uses an IN construct. (need better example)
+Another common form of subquery uses an IN construct. 
 ```SQL
 SELECT displayname
 FROM users
@@ -197,7 +197,7 @@ WHERE userid IN (
  FROM questions q INNER JOIN answers a 
  ON q.ownerid = a.ownerid
 )
- ```
+```
  
  **Challenge**  
  Create a frequency list of the tags used in the top 100 most answered questions.

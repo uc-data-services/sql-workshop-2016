@@ -81,6 +81,7 @@ img {
 <li><a href="#queries">Queries</a><ul>
 <li><a href="#sql-review">SQL review</a></li>
 <li><a href="#joins">Joins</a></li>
+<li><a href="#subqueries">Subqueries</a></li>
 </ul></li>
 <li><a href="#functions">Functions</a></li>
 <li><a href="#performance">Performance</a></li>
@@ -198,7 +199,7 @@ WHERE a.questionid = 6896;</code></pre>
 <p>TASK: Let’s run this in RStudio.</p>
 <p><strong>CHALLENGE:</strong><br />Listing the tags associated with a given post involves joining three tables. The syntax is intuitive. Simply add another JOIN clause after the ON condition. Write a query to list the titles and tags associated with questions with the id’s 4200, 4500, 10001. Hint: use an IN clause in your WHERE condition.</p>
 <p>Outer joins take the same form but the result sets contain rows where there was no match. It’s helpful to draw a diagram to understand the LEFT/RIGHT condition.</p>
-<p>In this example we’ll get a list of all users who’ve never posted a question, order it by displayname, and show the only the first 25 results.</p>
+<p>In this example we’ll get a list of all users who’ve never posted a question, order it by displayname, and show only the first 25 results.</p>
 <pre class="sql"><code>SELECT displayname 
 FROM questions q RIGHT OUTER JOIN users u 
 ON q.ownerid = u.userid
@@ -222,14 +223,23 @@ GROUP BY tag
 HAVING count(tag) = 100</code></pre>
 <p>Note that in the having clause the function was used, rather than the label ‘n’. This is required.</p>
 <p><strong>Challenge</strong><br />What is the displayname of the user with the most “accepted answers” and how many does he/she have?</p>
-<p>Subqueries</p>
+</div>
+<div id="subqueries" class="section level3">
+<h3>Subqueries</h3>
 <pre class="sql"><code>SELECT answerid, ownerid, score
 FROM answers
 WHERE score &gt; (
  SELECT AVG (score)
  FROM answers
 )</code></pre>
-<p>Another common form of subquery uses an IN construct. (need better example) <code>SQL SELECT displayname FROM users WHERE userid IN (  SELECT q.ownerid  FROM questions q INNER JOIN answers a   ON q.ownerid = a.ownerid )</code></p>
+<p>Another common form of subquery uses an IN construct.</p>
+<pre class="sql"><code>SELECT displayname
+FROM users
+WHERE userid IN (
+ SELECT q.ownerid
+ FROM questions q INNER JOIN answers a 
+ ON q.ownerid = a.ownerid
+)</code></pre>
 <p><strong>Challenge</strong><br /> Create a frequency list of the tags used in the top 100 most answered questions.</p>
 </div>
 </div>
