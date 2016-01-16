@@ -18,7 +18,6 @@ while (TRUE) {
   if (actual_iter %% 1000 == 0) {
     message("iter ", actual_iter)
     message("total_posts ", total_posts)
-   
   }
   
   tmplines <- readLines(con = dat, n = chunk_size, encoding = "UTF-8")
@@ -57,8 +56,6 @@ while (TRUE) {
   df$age <- as.numeric(df$accountid)
   df$accountid <- as.numeric(df$accountid)
   
-  
-
   dbWriteTable(conn = con, name = "users", as.data.frame(df),
               row.names = FALSE, append = TRUE)
   
