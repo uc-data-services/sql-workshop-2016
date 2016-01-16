@@ -60,8 +60,8 @@ dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN postid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN relatedpostid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN linktypeid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE postlinks ADD PRIMARY KEY(linkid)")
-dbGetQuery(con, "CREATE INDEX ON postlink (postid)")
-dbGetQuery(con, "CREATE INDEX ON postlink (relatedpostid)")
+dbGetQuery(con, "CREATE INDEX ON postlinks (postid)")
+dbGetQuery(con, "CREATE INDEX ON postlinks (relatedpostid)")
 
 dbDisconnect(con)
 
