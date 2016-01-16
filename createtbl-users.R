@@ -3,20 +3,8 @@
 library("xml2")
 library("dplyr")
 library("stringr")
-library("RPostgreSQL")
-
 rm(list = ls())
-dbhost <- Sys.getenv("PGSERVER")
-dbuser <- Sys.getenv("PGUSER")
-dbpasswd <- Sys.getenv("PGPASSWD")
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, 
-                 dbname = "stackoverflow", 
-                 host = dbhost, 
-                 port = 5432, 
-                 user = dbuser, 
-                 password = dbpasswd)
-
+source("dbconn.R")
 file <- "original_data/stats/Users.xml"
 dat <- file(description = file, open = "r")
 invisible(readLines(con = dat, n = 2))
@@ -75,8 +63,16 @@ while (TRUE) {
               row.names = FALSE, append = TRUE)
   
 }
-
 close(dat)
+
+### Modify some default data types and add primary key
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN userid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN reputation TYPE integer;")
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN upvotes TYPE integer;")
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN downvotes TYPE integer;")
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN age TYPE integer;")
+dbGetQuery(con, "ALTER TABLE users ALTER COLUMN accountid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE users ADD PRIMARY KEY (userid)")
+
 dbDisconnect(con)
 
