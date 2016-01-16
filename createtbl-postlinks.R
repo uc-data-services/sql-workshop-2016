@@ -1,11 +1,9 @@
 # Read Postlinks.xml and create the postlinks table
-
+rm(list = ls())
 library("xml2")
 library("dplyr")
 library("stringr")
-library("RPostgreSQL")
 
-rm(list = ls())
 source("dbconn.R")
 file <- "original_data/stats/PostLinks.xml"
 dat <- file(description = file, open = "r")
@@ -57,6 +55,13 @@ while (TRUE) {
   
 }
 close(dat)
+dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN linkid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN postid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN relatedpostid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE postlinks ALTER COLUMN linktypeid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE postlinks ADD PRIMARY KEY(linkid)")
+dbGetQuery(con, "CREATE INDEX ON postlink (postid)")
+dbGetQuery(con, "CREATE INDEX ON postlink (relatedpostid)")
+
 dbDisconnect(con)
 

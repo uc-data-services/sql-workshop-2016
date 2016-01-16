@@ -1,21 +1,10 @@
-
+rm(list = ls())
 library("xml2")
 library("dplyr")
 library("stringr")
-library("RPostgreSQL")
 
-rm(list = ls())
-dbhost <- Sys.getenv("PGSERVER")
-dbuser <- Sys.getenv("PGUSER")
-dbpasswd <- Sys.getenv("PGPASSWD")
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, 
-                 dbname = "stackoverflow", 
-                 host = dbhost, 
-                 port = 5432, 
-                 user = dbuser, 
-                 password = dbpasswd)
 source("dbconn.R")
+
 file <- "original_data/stats/Posts.xml"
 dat <- file(description = file, open = "r")
 invisible(readLines(con = dat, n = 2))
@@ -63,5 +52,9 @@ while (TRUE) {
 }
 
 close(dat)
+dbGetQuery(con, "ALTER TABLE accepted_answers ALTER COLUMN questionid TYPE integer;")
+dbGetQuery(con, "ALTER TABLE accepted_answers ALTER COLUMN answerid TYPE integer;")
 dbGetQuery(con, "ALTER TABLE accepted_answers ADD PRIMARY KEY (questionid)")
+dbGetQuery(con, "CREATE INDEX ON accepted_answers (answerid)")
+
 dbDisconnect(con)
