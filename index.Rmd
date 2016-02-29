@@ -25,7 +25,9 @@ Get experience working with SQL within R.
 ## Relational Database
 The SQL standard has been around a long time. I would argue that the main reason for this is that it provides an effective way to model and implement 'business logic'. The open source options like MySQL and PostgreSQL are relatively easy to install maintain and have helped perpetuate the popularity of SQL. 
 
-In today's bootcamp, we'll use data from Stackoverflow. I need to give credit to this blog post for giving me the idea to use this data and for code samples. The raw data can be downloaded from here but it's not necessary to do so now. If you want to build the database, you'll need a working Postgresql server. All the code is available on Github.
+In today's bootcamp, we'll use data from Stackoverflow. I need to give credit to this blog post for giving me the idea to use this data and for code samples. The raw data can be downloaded from here but it's not necessary to do so now. If you want to build the database, you'll need a working Postgresql server. All the code is available on Github. 
+
+Attribution: The idea of using this data (and some of the code) came from http://jkunst.com/r/what-do-we-ask-in-stackoverflow/ which I found via R-Bloggers.
 
 **Challenge:**  
 Working with a partner, take a look at stats.stackexchange.com and think about some analysis you might want to do with the data you see on the pages. 
